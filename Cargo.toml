@@ -1,0 +1,62 @@
+[package]
+name = "simple_predicates-rs"
+version = "0.1.0"
+authors = ["Skylor R Schermer <skyschermer@gmail.com>"]
+edition = "2018"
+resolver = "2"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/skysch/simple_predicates-rs"
+description = "A simple local configuration management utility"
+readme = "readme.md"
+keywords = []
+homepage = "https://github.com/skysch/simple_predicates-rs"
+exclude = ["*.sublime-project", "*.sublime-workspace"]
+
+[lib]
+name = "simple_predicates"
+
+[features]
+default = []
+
+# Required dependencies
+[dependencies]
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+# Optional dependencies
+
+# Dependencies used for tests, examples, and benches.
+[dev-dependencies]
+ron = "0.6"
+
+# Dependencies used for build.rs.
+[build-dependencies]
+
+# The development profile, used for `cargo build`
+[profile.dev]
+opt-level = 0
+debug = false # Disabled to speed up compilation; not being used much.
+rpath = false
+lto = false
+debug-assertions = true
+incremental = true
+overflow-checks = true
+
+# Development profile overrides, ensure dependent crates run fast.
+[profile.dev.package."*"]
+opt-level = 3
+debug-assertions = false
+codegen-units = 1
+
+
+# The release profile, used for `cargo build --release`
+[profile.release]
+opt-level = 3
+debug = true
+rpath = false
+lto = "fat"
+debug-assertions = false
+codegen-units = 1
+incremental = false
+overflow-checks = true
+
+
