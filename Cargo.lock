@@ -62,7 +62,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "simple_predicates-rs"
+name = "simple_predicates"
 version = "0.1.0"
 dependencies = [
  "ron",
