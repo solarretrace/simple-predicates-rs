@@ -17,5 +17,5 @@ simple_predicates = "0.1"
 
 # License
 
-Stall is licenced with the [MIT license](/license-mit.md) or the [Apache version 2.0 license](/license-apache.md), at your option.
+simple_predicates is licenced with the [MIT license](/license-mit.md) or the [Apache version 2.0 license](/license-apache.md), at your option.
 
