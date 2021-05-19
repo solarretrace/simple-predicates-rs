@@ -215,6 +215,11 @@ impl<T> Cnf<T> where T: Eval + Eq + Hash {
     pub fn into_vec(self) -> Vec<Expr<T>> {
         self.0.into_iter().collect()
     }
+
+    /// Returns true if the boolean expression contains no terms.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
 }
 
 impl<T> Eval for Cnf<T> where T: Eval + Eq + Hash {
@@ -282,6 +287,11 @@ impl<T> Dnf<T> where T: Eval + Eq + Hash{
     /// Returns the disjunctive clauses as elements of a `Vec`.
     pub fn into_vec(self) -> Vec<Expr<T>> {
         self.0.into_iter().collect()
+    }
+
+    /// Returns true if the boolean expression contains no terms.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }
 

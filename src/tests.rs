@@ -176,7 +176,13 @@ fn three_level_dnf() {
 }
 
 
+#[cfg(not(feature = "serde"))]
+#[test]
+fn serialize_tests() {
+    panic!("Enable \"serde\" (--all-features) feature to run serde tests.")
+}
 
+#[cfg(feature = "serde")]
 #[test]
 fn serialize_expr_ron() {
     use Expr::*;
@@ -192,7 +198,7 @@ fn serialize_expr_ron() {
     assert_eq!(s, "And(Or(Not(Bool(1)),Bool(2)),Or(Not(Bool(3)),Bool(4)))");
 }
 
-
+#[cfg(feature = "serde")]
 #[test]
 fn deserialize_expr_ron() {
     use Expr::*;
@@ -212,4 +218,3 @@ fn deserialize_expr_ron() {
 
     assert_eq!(res, expr);
 }
-
