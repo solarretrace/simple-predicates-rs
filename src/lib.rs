@@ -205,7 +205,7 @@ impl<T> PartialEq for Expr<T> where T: PartialEq {
 // Cnf
 ////////////////////////////////////////////////////////////////////////////////
 /// A boolean expression in Conjunctive Normal Form.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
 pub struct Cnf<T>(HashSet<Expr<T>>) where T: Eval + Eq + Hash;
@@ -278,7 +278,7 @@ impl<T> From<Cnf<T>> for Vec<Expr<T>> where T: Eval + Eq + Hash {
 // Dnf
 ////////////////////////////////////////////////////////////////////////////////
 /// A boolean expression in Disjunctive Normal Form.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
 pub struct Dnf<T>(HashSet<Expr<T>>) where T: Eval + Eq + Hash;
