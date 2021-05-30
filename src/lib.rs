@@ -205,7 +205,7 @@ impl<T> PartialEq for Expr<T> where T: PartialEq {
 // Cnf
 ////////////////////////////////////////////////////////////////////////////////
 /// A boolean expression in Conjunctive Normal Form.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
 pub struct Cnf<T>(HashSet<Expr<T>>) where T: Eval + Eq + Hash;
@@ -274,11 +274,17 @@ impl<T> From<Cnf<T>> for Vec<Expr<T>> where T: Eval + Eq + Hash {
     } 
 }
 
+impl<T> Default for Cnf<T> where T: Eval + Eq + Hash {
+    fn default() -> Self {
+        Cnf(HashSet::new())
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Dnf
 ////////////////////////////////////////////////////////////////////////////////
 /// A boolean expression in Disjunctive Normal Form.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
 pub struct Dnf<T>(HashSet<Expr<T>>) where T: Eval + Eq + Hash;
@@ -344,5 +350,11 @@ impl<I, T> From<I> for Dnf<T> where
 impl<T> From<Dnf<T>> for Vec<Expr<T>> where T: Eval + Eq + Hash {
     fn from(dnf: Dnf<T>) -> Vec<Expr<T>> {
         dnf.0.into_iter().collect()
+    }
+}
+
+impl<T> Default for Dnf<T> where T: Eval + Eq + Hash {
+    fn default() -> Self {
+        Dnf(HashSet::new())
     }
 }
