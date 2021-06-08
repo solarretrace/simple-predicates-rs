@@ -15,6 +15,15 @@ Add the following to your `Cargo.toml`:
 simple_predicates = "0.2"
 ```
 
+
+## Features
+
+| Feature | Description |
+| ------- | ----------- |
+| "serde" | Enables serialization and deserialization of data using [serde](https://crates.io/crates/serde). |
+
+By default, there are no features enabled.
+
 # Example Usage
 
 Lets say we want to write boolean expressions denoting the possibility of a `Vec` relating to some `u32` values according to the `Vec::contains` method. We start by implementing `Eval`:

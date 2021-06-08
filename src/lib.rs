@@ -24,7 +24,14 @@
 //! [dependencies]
 //! simple_predicates = "0.2"
 //! ```
-//! 
+//!
+//! ## Features
+//!
+//! | Feature | Description |
+//! | ------- | ----------- |
+//! | "serde" | Enables serialization and deserialization of data using [serde](https://crates.io/crates/serde). |
+//!
+//! By default, there are no features enabled.
 //! 
 //! # Example Usage
 //! 
