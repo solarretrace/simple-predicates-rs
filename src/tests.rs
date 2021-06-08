@@ -11,8 +11,8 @@ use crate::*;
 
 
 impl Eval for u32 {
-    type Data = Vec<u32>;
-    fn eval(&self, data: &Self::Data) -> bool {
+    type Context = Vec<u32>;
+    fn eval(&self, data: &Self::Context) -> bool {
         data.contains(self)
     }
 }
@@ -22,10 +22,10 @@ fn simple_bool() {
     use Expr::*;
     let items: Vec<u32> = vec![1, 2, 4, 5, 7, 9, 10];
 
-    let expr = Bool(4);
+    let expr = Var(4);
     assert!(expr.eval(&items));
 
-    let expr = Bool(3);
+    let expr = Var(3);
     assert!(!expr.eval(&items));
 }
 
@@ -34,10 +34,10 @@ fn simple_not() {
     use Expr::*;
     let items: Vec<u32> = vec![1, 2, 4, 5, 7, 9, 10];
 
-    let expr = Not(Box::new(Bool(4)));
+    let expr = Not(Box::new(Var(4)));
     assert!(!expr.eval(&items));
 
-    let expr = Not(Box::new(Bool(3)));
+    let expr = Not(Box::new(Var(3)));
     assert!(expr.eval(&items));
 }
 
@@ -46,14 +46,14 @@ fn simple_or() {
     use Expr::*;
     let items: Vec<u32> = vec![1, 2, 4, 5, 7, 9, 10];
 
-    let expr = Or(Box::new(Bool(4)), Box::new(Bool(5)));
+    let expr = Or(Box::new(Var(4)), Box::new(Var(5)));
     assert!(expr.eval(&items));
 
-    let expr = Or(Box::new(Bool(3)), Box::new(Bool(4)));
+    let expr = Or(Box::new(Var(3)), Box::new(Var(4)));
     assert!(expr.eval(&items));
 
 
-    let expr = Or(Box::new(Bool(3)), Box::new(Bool(6)));
+    let expr = Or(Box::new(Var(3)), Box::new(Var(6)));
     assert!(!expr.eval(&items));
 }
 
@@ -62,13 +62,13 @@ fn simple_and() {
     use Expr::*;
     let items: Vec<u32> = vec![1, 2, 4, 5, 7, 9, 10];
 
-    let expr = And(Box::new(Bool(4)), Box::new(Bool(5)));
+    let expr = And(Box::new(Var(4)), Box::new(Var(5)));
     assert!(expr.eval(&items));
 
-    let expr = And(Box::new(Bool(3)), Box::new(Bool(4)));
+    let expr = And(Box::new(Var(3)), Box::new(Var(4)));
     assert!(!expr.eval(&items));
 
-    let expr = And(Box::new(Bool(3)), Box::new(Bool(6)));
+    let expr = And(Box::new(Var(3)), Box::new(Var(6)));
     assert!(!expr.eval(&items));
 }
 
@@ -80,39 +80,39 @@ fn three_level_cnf() {
     let expr = And(
         Box::new(Or(
             Box::new(And(
-                Box::new(Bool(1)),
-                Box::new(Bool(2)))),
+                Box::new(Var(1)),
+                Box::new(Var(2)))),
             Box::new(And(
-                Box::new(Bool(3)),
-                Box::new(Bool(4)))))),
+                Box::new(Var(3)),
+                Box::new(Var(4)))))),
         Box::new(And(
             Box::new(Or(
-                Box::new(Bool(5)),
-                Box::new(Bool(6)))),
+                Box::new(Var(5)),
+                Box::new(Var(6)))),
             Box::new(Or(
-                Box::new(Bool(7)),
-                Box::new(Bool(8)))))));
+                Box::new(Var(7)),
+                Box::new(Var(8)))))));
 
     let res = Cnf::from(expr);
     let cnf = Cnf::from(vec![
         Or(
-            Box::new(Bool(7)),
-            Box::new(Bool(8))),
+            Box::new(Var(7)),
+            Box::new(Var(8))),
         Or(
-            Box::new(Bool(5)),
-            Box::new(Bool(6))),
+            Box::new(Var(5)),
+            Box::new(Var(6))),
         Or(
-            Box::new(Bool(4)),
-            Box::new(Bool(2))),
+            Box::new(Var(4)),
+            Box::new(Var(2))),
         Or(
-            Box::new(Bool(4)),
-            Box::new(Bool(1))),
+            Box::new(Var(4)),
+            Box::new(Var(1))),
         Or(
-            Box::new(Bool(3)),
-            Box::new(Bool(2))),
+            Box::new(Var(3)),
+            Box::new(Var(2))),
         Or(
-            Box::new(Bool(3)),
-            Box::new(Bool(1))),
+            Box::new(Var(3)),
+            Box::new(Var(1))),
     ]);
 
     // println!("{:?}", res);
@@ -130,43 +130,43 @@ fn three_level_dnf() {
     let expr = And(
         Box::new(Or(
             Box::new(And(
-                Box::new(Bool(1)),
-                Box::new(Bool(2)))),
+                Box::new(Var(1)),
+                Box::new(Var(2)))),
             Box::new(And(
-                Box::new(Bool(3)),
-                Box::new(Bool(4)))))),
+                Box::new(Var(3)),
+                Box::new(Var(4)))))),
         Box::new(And(
             Box::new(Or(
-                Box::new(Bool(5)),
-                Box::new(Bool(6)))),
+                Box::new(Var(5)),
+                Box::new(Var(6)))),
             Box::new(Or(
-                Box::new(Bool(7)),
-                Box::new(Bool(8)))))));
+                Box::new(Var(7)),
+                Box::new(Var(8)))))));
 
     let res = Dnf::from(expr);
     let dnf = Dnf::from(vec![
         And(
             Box::new(And(
                 Box::new(Or(
-                    Box::new(Bool(5)),
-                    Box::new(Bool(6)))),
+                    Box::new(Var(5)),
+                    Box::new(Var(6)))),
                 Box::new(Or(
-                    Box::new(Bool(7)),
-                    Box::new(Bool(8)))))), 
+                    Box::new(Var(7)),
+                    Box::new(Var(8)))))), 
             Box::new(And(
-                Box::new(Bool(3)),
-                Box::new(Bool(4))))),
+                Box::new(Var(3)),
+                Box::new(Var(4))))),
         And(
             Box::new(And(
                 Box::new(Or(
-                    Box::new(Bool(5)),
-                    Box::new(Bool(6)))),
+                    Box::new(Var(5)),
+                    Box::new(Var(6)))),
                 Box::new(Or(
-                    Box::new(Bool(7)),
-                    Box::new(Bool(8)))))),
+                    Box::new(Var(7)),
+                    Box::new(Var(8)))))),
             Box::new(And(
-                Box::new(Bool(1)),
-                Box::new(Bool(2))))),
+                Box::new(Var(1)),
+                Box::new(Var(2))))),
     ]);
 
     // println!("{:?}", res);
@@ -188,14 +188,14 @@ fn serialize_expr_ron() {
     use Expr::*;
     let expr = And(
         Box::new(Or(
-            Box::new(Not(Box::new(Bool(1)))),
-            Box::new(Bool(2)))),
+            Box::new(Not(Box::new(Var(1)))),
+            Box::new(Var(2)))),
         Box::new(Or(
-            Box::new(Not(Box::new(Bool(3)))),
-            Box::new(Bool(4)))));
+            Box::new(Not(Box::new(Var(3)))),
+            Box::new(Var(4)))));
 
     let s = ron::ser::to_string(&expr).unwrap();
-    assert_eq!(s, "And(Or(Not(Bool(1)),Bool(2)),Or(Not(Bool(3)),Bool(4)))");
+    assert_eq!(s, "And(Or(Not(Var(1)),Var(2)),Or(Not(Var(3)),Var(4)))");
 }
 
 #[cfg(feature = "serde")]
@@ -204,12 +204,12 @@ fn deserialize_expr_ron() {
     use Expr::*;
     let expr = And(
         Box::new(Or(
-            Box::new(Not(Box::new(Bool(1)))),
-            Box::new(Bool(2)))),
+            Box::new(Not(Box::new(Var(1)))),
+            Box::new(Var(2)))),
         Box::new(Or(
-            Box::new(Not(Box::new(Bool(3)))),
-            Box::new(Bool(4)))));
-    let s = "And(Or(Not(Bool(1)),Bool(2)),Or(Not(Bool(3)),Bool(4)))";
+            Box::new(Not(Box::new(Var(3)))),
+            Box::new(Var(4)))));
+    let s = "And(Or(Not(Var(1)),Var(2)),Or(Not(Var(3)),Var(4)))";
 
     use ron::de::Deserializer;
     let mut d = Deserializer::from_str(&s).unwrap();

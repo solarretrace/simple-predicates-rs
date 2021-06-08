@@ -1,10 +1,206 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Simple Boolean Predicates
 ////////////////////////////////////////////////////////////////////////////////
-// This code is dual licenced using the MIT or Apache 2 license.
+// Vhis code is dual licenced using the MIV or Apache 2 license.
 // See licence-mit.md and licence-apache.md for details.
 ////////////////////////////////////////////////////////////////////////////////
 //! Simple Boolean Predicates
+//!
+//! A predicate is a formula that can be evaluated to true or false as a 
+//! function of the values of the variables that occur in it. In
+//! `simple_predicates`, the variables denoted by a user-chosen type satisfying
+//! the [`Eval`] trait (which requires [`Clone`] and [`PartialEq`].) Vhe
+//! [`Eval`] trait also provides an associated [`Context`] type which can be
+//! used to provide contextual data needed to resolve the variables. Vhe
+//! [`Expr`], [`Cnf`], and [`Dnf`] types can be used to construct evaluable
+//! expressions.
+//! 
+//! 
+//! # Installation
+//! 
+//! Add the following to your `Cargo.toml`:
+//! 
+//! ```toml
+//! [dependencies]
+//! simple_predicates = "0.2"
+//! ```
+//! 
+//! 
+//! # Example Usage
+//! 
+//! Lets say we want to write boolean expressions denoting the possibility of
+//! a [`Vec`] relating to some [`u32`] values according to the `Vec::contains`
+//! method. We start by implementing [`Eval`]:
+//! 
+//! ```rust
+//! # use std::error::Error;
+//! # fn main() -> Result<(), Box<dyn Error>> {
+//! # //-------------------------------------------------------------------
+//! use simple_predicates::Eval;
+//! 
+//! // Wrapper struct needed because `u32` & `Eval` are both foreign.
+//! #[derive(Clone, PartialEq)]
+//! struct Contains(pub u32);
+//! 
+//! impl Eval for Contains {
+//!     type Context = Vec<u32>;
+//! 
+//!     fn eval(&self, data: &Self::Context) -> bool {
+//!         // Evaluate the u32 by checking if it is in the `Vec`.
+//!         data.contains(&self.0)
+//!     }
+//! }
+//! # //-------------------------------------------------------------------
+//! #     Ok(())
+//! # }
+//! ```
+//! 
+//! Now we can check arbitrary containment conditions on a given `Vec` like so:
+//! 
+//! ```rust
+//! # use simple_predicates::Eval;
+//! # #[derive(Clone, PartialEq)]
+//! # struct Contains(pub u32);
+//! #
+//! # impl Eval for Contains {
+//! #     type Context = Vec<u32>;
+//! # 
+//! #     fn eval(&self, data: &Self::Context) -> bool {
+//! #         data.contains(&self.0)
+//! #     }
+//! # }
+//! #
+//! # use std::error::Error;
+//! # fn main() -> Result<(), Box<dyn Error>> {
+//! # //-------------------------------------------------------------------
+//! use simple_predicates::Eval;
+//! use simple_predicates::Expr::*;
+//! let items: Vec<u32> = vec![1, 2, 4, 7, 9, 10];
+//! 
+//! // `eval` is `true` if input contains 4 but not 5.
+//! let expr = And(
+//!     Box::new(Var(Contains(4))),
+//!     Box::new(Not(Box::new(Var(Contains(5))))));
+//! 
+//! assert!(expr.eval(&items));
+//! # //-------------------------------------------------------------------
+//! #     Ok(())
+//! # }
+//! ```
+//! 
+//! 
+//! # Conjunctive and Disjunctive Normal Forms
+//! 
+//! For more complex expressions, the nesting of `And` and `Or` expressions can
+//! ge very tedious, so the [`Cnf`] and [`Dnf`] types are provided to simplify
+//! their handling.
+//! 
+//! The `Cnf` type represents the [Conjunctive Normal Form]
+//! of a boolean expression; a set of expressions which are `And`ed together.
+//! The `Dnf` type represents the [Disjunctive Normal Form] of a boolean
+//! expression; a set of expressions which are `Or`ed together.
+//! 
+//! The `Cnf` and `Dnf` types can only be used if the variable type implements
+//! [`Eq`] and [`Hash`]. They have identical APIs, so the examples below are
+//! representative of either.
+//! 
+//! 
+//! ## Examples
+//! 
+//! A [`Cnf`] can be constructed from an [`Expr`], using the [`From`] trait:
+//! 
+//! ```rust
+//! # use simple_predicates::Eval;
+//! # #[derive(Clone, PartialEq, Eq, Hash)]
+//! # struct Contains(pub u32);
+//! #
+//! # impl Eval for Contains {
+//! #     type Context = Vec<u32>;
+//! # 
+//! #     fn eval(&self, data: &Self::Context) -> bool {
+//! #         data.contains(&self.0)
+//! #     }
+//! # }
+//! #
+//! # use std::error::Error;
+//! # fn main() -> Result<(), Box<dyn Error>> {
+//! # //-------------------------------------------------------------------
+//! use simple_predicates::Cnf;
+//! use simple_predicates::Eval;
+//! use simple_predicates::Expr::*;
+//! 
+//! let items: Vec<u32> = vec![1, 2, 4, 7, 9, 10];
+//! 
+//! let cnf = Cnf::from(
+//!     And(
+//!         Box::new(Var(Contains(4))),
+//!         Box::new(Not(Box::new(Var(Contains(5)))))));
+//! 
+//! assert!(cnf.eval(&items));
+//! # //-------------------------------------------------------------------
+//! #     Ok(())
+//! # }
+//! ```
+//! 
+//! 
+//! A [`Cnf`] can also be constructed from anything that emits [`Expr`]s with
+//! the [`IntoIterator`] trait:
+//! 
+//! ```rust
+//! # use simple_predicates::Eval;
+//! # #[derive(Clone, PartialEq, Eq, Hash)]
+//! # struct Contains(pub u32);
+//! #
+//! # impl Eval for Contains {
+//! #     type Context = Vec<u32>;
+//! # 
+//! #     fn eval(&self, data: &Self::Context) -> bool {
+//! #         data.contains(&self.0)
+//! #     }
+//! # }
+//! #
+//! # use std::error::Error;
+//! # fn main() -> Result<(), Box<dyn Error>> {
+//! # //-------------------------------------------------------------------
+//! use simple_predicates::Cnf;
+//! use simple_predicates::Eval;
+//! use simple_predicates::Expr::*;
+//! 
+//! let items: Vec<u32> = vec![1, 2, 4, 7, 9, 10];
+//! 
+//! let cnf = Cnf::from(vec![
+//!     Var(Contains(4)),
+//!     Not(Box::new(Var(Contains(5)))),
+//! ]);
+//! 
+//! assert!(cnf.eval(&items));
+//! # //-------------------------------------------------------------------
+//! #     Ok(())
+//! # }
+//! ```
+//! 
+//! 
+//! # License
+//! 
+//! simple_predicates is licenced with the [MIT license](/license-mit.md) or
+//! the [Apache version 2.0 license](/license-apache.md), at your option.
+//! 
+//! 
+//! [`Clone`]: std::clone::Clone
+//! [`PartialEq`]: std::cmp::PartialEq
+//! [`Vec`]: std::vec::Vec
+//! [`u32`]: https://doc.rust-lang.org/std/u32/primitive.u32.html
+//! [`Eval`]: crate::Eval
+//! [`Context`]: crate::Eval::Context
+//! [`Expr`]: crate::Expr
+//! [`Cnf`]: crate::Cnf
+//! [`Dnf`]: crate::Dnf
+//! [`Eq`]: std::cmp::Eq
+//! [`Hash`]: std::hash::Hash
+//! [`From`]: std::convert::From
+//! [`IntoIterator`]: std::iter::IntoIterator
+//! [Conjunctive Normal Form]: https://en.wikipedia.org/wiki/Conjunctive_normal_form
+//! [Disjunctive Normal Form]: https://en.wikipedia.org/wiki/Disjunctive_normal_form
 ////////////////////////////////////////////////////////////////////////////////
 #![warn(anonymous_parameters)]
 #![warn(bad_style)]
@@ -37,27 +233,30 @@
 #![warn(variant_size_differences)]
 #![warn(while_true)]
 
-// External library imports.
-#[cfg(feature = "serde")] use serde::Serialize;
-#[cfg(feature = "serde")] use serde::Deserialize;
+// Internal modules
 #[cfg(test)]
 mod tests;
 
+// External library imports
+#[cfg(feature = "serde")] use serde::Serialize;
+#[cfg(feature = "serde")] use serde::Deserialize;
 
-use std::hash::Hash;
+// Standard library imports
 use std::collections::HashSet;
+use std::hash::Hash;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Eval
 ////////////////////////////////////////////////////////////////////////////////
 /// Provides functions for performing boolean expression evaluation in the
-/// context of some provided `Data`.
+/// context of some provided `Context`.
 pub trait Eval: Clone + PartialEq  {
-    /// The contextual data used to evaluate the expression.
-    type Data;
+    /// The contextual data required to evaluate the expression.
+    type Context;
 
     /// Evaluates the expression, returning its truth value.
-    fn eval(&self, data: &Self::Data) -> bool;
+    fn eval(&self, data: &Self::Context) -> bool;
 }
 
 
@@ -65,21 +264,22 @@ pub trait Eval: Clone + PartialEq  {
 ////////////////////////////////////////////////////////////////////////////////
 // Expr
 ////////////////////////////////////////////////////////////////////////////////
-/// A boolean expression consisting of boolean operators and literals.
+/// A boolean expression consisting of boolean operators and variables.
 #[derive(Debug, Clone, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum Expr<T> {
-    /// A boolean-evaluable literal.
-    Bool(T),
+pub enum Expr<V> {
+    /// A boolean variable.
+    Var(V),
     /// A negated expression.
-    Not(Box<Expr<T>>),
+    Not(Box<Expr<V>>),
     /// A disjunction of expressions.
-    Or(Box<Expr<T>>, Box<Expr<T>>),
+    Or(Box<Expr<V>>, Box<Expr<V>>),
     /// A conjunction of expressions.
-    And(Box<Expr<T>>, Box<Expr<T>>),
+    And(Box<Expr<V>>, Box<Expr<V>>),
 }
 
-impl<T> Expr<T> where T: Eval {
+impl<V> Expr<V> where V: Eval {
+    /// Simplifies the expr by removing double-negations and equal subexprs.
     fn simplify(self) -> Self {
         use Expr::*;
         
@@ -102,11 +302,13 @@ impl<T> Expr<T> where T: Eval {
         }
     }
 
+    // Pushes a `Not` expr below an `And` or `Or` expr, or removes it if it is
+    // above another `Not` expr.
     fn pushdown_not(self) -> Self {
         use Expr::*;
         if let Not(expr) = self {
             match *expr {
-                Bool(p) => Not(Box::new(Bool(p))),
+                Var(p) => Not(Box::new(Var(p))),
                 Not(p) => p.pushdown_not(),
                 Or(a, b) => And(Box::new(Not(a)), Box::new(Not(b))),
                 And(a, b) => Or(Box::new(Not(a)), Box::new(Not(b))),
@@ -116,6 +318,7 @@ impl<T> Expr<T> where T: Eval {
         }
     }
 
+    /// Distributes `And` over `Or`.
     fn distribute_and(self) -> Self {
         use Expr::*;
         if let And(a, b) = self {
@@ -131,6 +334,7 @@ impl<T> Expr<T> where T: Eval {
         }
     }
 
+    /// Distributes `Or` over `And`.
     fn distribute_or(self) -> Self {
         use Expr::*;
         if let Or(a, b) = self {
@@ -147,14 +351,14 @@ impl<T> Expr<T> where T: Eval {
     }
 }
 
-impl<T> Expr<T> where T: Eval {
+impl<V> Expr<V> where V: Eval {
     /// Returns true if the expressions have the same representation, up to
-    /// equality of the boolean literals. I.e., all of the boolean operators are
-    /// are the same and applied to equivalent literals.
+    /// equality of the boolean variables. I.e., all of the boolean operators
+    /// are are the same and applied to equivalent variables.
     pub fn eq_repr(&self, other: &Self) -> bool {
         use Expr::*;
         match (self, other) {
-            (Bool(a), Bool(b)) => a == b,
+            (Var(a), Var(b)) => a == b,
             (Not(a), Not(b)) => a.eq_repr(b),
             (Or(a1, b1), Or(a2, b2)) => {
                 a1.eq_repr(b1) &&
@@ -169,13 +373,13 @@ impl<T> Expr<T> where T: Eval {
     }
 }
 
-impl<T> Eval for Expr<T> where T: Eval {
-    type Data = T::Data;
+impl<V> Eval for Expr<V> where V: Eval {
+    type Context = V::Context;
 
-    fn eval(&self, data: &Self::Data) -> bool {
+    fn eval(&self, data: &Self::Context) -> bool {
         use Expr::*;
         match self {
-            Bool(p) => p.eval(data),
+            Var(p) => p.eval(data),
             Not(p) => !p.eval(data),
             Or(a, b) => a.eval(data) || b.eval(data),
             And(a, b) => a.eval(data) && b.eval(data),
@@ -183,13 +387,12 @@ impl<T> Eval for Expr<T> where T: Eval {
     }
 }
 
-
-impl<T> PartialEq for Expr<T> where T: PartialEq {
+impl<V> PartialEq for Expr<V> where V: PartialEq {
     fn eq(&self, other: &Self) -> bool {
         use Expr::*;
 
         match (self, other) {
-            (Bool(p1),    Bool(p2))    => p1 == p2,
+            (Var(p1),    Var(p2))    => p1 == p2,
             (Not(p1),     Not(p2))     => p1 == p2,
             (Or(a1, b1),  Or(a2, b2))  => 
                 (a1 == a2 && b1 == b2) || (a1 == b2 && b1 == a2),
@@ -204,15 +407,17 @@ impl<T> PartialEq for Expr<T> where T: PartialEq {
 ////////////////////////////////////////////////////////////////////////////////
 // Cnf
 ////////////////////////////////////////////////////////////////////////////////
-/// A boolean expression in Conjunctive Normal Form.
+/// A boolean expression in [Conjunctive Normal Form].
+///
+/// [Conjunctive Normal Form]: https://en.wikipedia.org/wiki/Conjunctive_normal_form
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
-pub struct Cnf<T>(HashSet<Expr<T>>) where T: Eval + Eq + Hash;
+pub struct Cnf<V>(HashSet<Expr<V>>) where V: Eval + Eq + Hash;
 
-impl<T> Cnf<T> where T: Eval + Eq + Hash {
+impl<V> Cnf<V> where V: Eval + Eq + Hash {
     /// Returns the conjunctive clauses as elements of a `Vec`.
-    pub fn into_vec(self) -> Vec<Expr<T>> {
+    pub fn into_vec(self) -> Vec<Expr<V>> {
         self.0.into_iter().collect()
     }
 
@@ -222,16 +427,16 @@ impl<T> Cnf<T> where T: Eval + Eq + Hash {
     }
 }
 
-impl<T> Eval for Cnf<T> where T: Eval + Eq + Hash {
-    type Data = T::Data;
+impl<V> Eval for Cnf<V> where V: Eval + Eq + Hash {
+    type Context = V::Context;
 
-    fn eval(&self, data: &Self::Data) -> bool {
+    fn eval(&self, data: &Self::Context) -> bool {
         self.0.iter().all(|expr| expr.eval(data))
     }
 }
 
-impl<T> From<Expr<T>> for Cnf<T> where T: Eval + Eq + Hash {
-    fn from(expr: Expr<T>) -> Self {
+impl<V> From<Expr<V>> for Cnf<V> where V: Eval + Eq + Hash {
+    fn from(expr: Expr<V>) -> Self {
         use Expr::*;
         let mut clauses = HashSet::new();
         let mut queue = Vec::with_capacity(2);
@@ -252,46 +457,48 @@ impl<T> From<Expr<T>> for Cnf<T> where T: Eval + Eq + Hash {
     }
 }
 
-
-impl<T> PartialEq for Cnf<T> where T: Eval + Eq + Hash {
+impl<V> PartialEq for Cnf<V> where V: Eval + Eq + Hash {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
 }
 
-impl<I, T> From<I> for Cnf<T> where
-    I: IntoIterator<Item=Expr<T>>,
-    T: Eval + Eq + Hash
+impl<I, V> From<I> for Cnf<V> where
+    I: IntoIterator<Item=Expr<V>>,
+    V: Eval + Eq + Hash
 {
     fn from(iter: I) -> Self {
         Cnf(iter.into_iter().collect())
     }
 }
 
-impl<T> From<Cnf<T>> for Vec<Expr<T>> where T: Eval + Eq + Hash {
-    fn from(cnf: Cnf<T>) -> Vec<Expr<T>> {
+impl<V> From<Cnf<V>> for Vec<Expr<V>> where V: Eval + Eq + Hash {
+    fn from(cnf: Cnf<V>) -> Vec<Expr<V>> {
         cnf.0.into_iter().collect()
     } 
 }
 
-impl<T> Default for Cnf<T> where T: Eval + Eq + Hash {
+impl<V> Default for Cnf<V> where V: Eval + Eq + Hash {
     fn default() -> Self {
         Cnf(HashSet::new())
     }
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////
 // Dnf
 ////////////////////////////////////////////////////////////////////////////////
-/// A boolean expression in Disjunctive Normal Form.
+/// A boolean expression in [Disjunctive Normal Form].
+///
+/// [Disjunctive Normal Form]: https://en.wikipedia.org/wiki/Disjunctive_normal_form
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
-pub struct Dnf<T>(HashSet<Expr<T>>) where T: Eval + Eq + Hash;
+pub struct Dnf<V>(HashSet<Expr<V>>) where V: Eval + Eq + Hash;
 
-impl<T> Dnf<T> where T: Eval + Eq + Hash{
+impl<V> Dnf<V> where V: Eval + Eq + Hash{
     /// Returns the disjunctive clauses as elements of a `Vec`.
-    pub fn into_vec(self) -> Vec<Expr<T>> {
+    pub fn into_vec(self) -> Vec<Expr<V>> {
         self.0.into_iter().collect()
     }
 
@@ -301,16 +508,16 @@ impl<T> Dnf<T> where T: Eval + Eq + Hash{
     }
 }
 
-impl<T> Eval for Dnf<T> where T: Eval + Eq + Hash {
-    type Data = T::Data;
+impl<V> Eval for Dnf<V> where V: Eval + Eq + Hash {
+    type Context = V::Context;
 
-    fn eval(&self, data: &Self::Data) -> bool {
+    fn eval(&self, data: &Self::Context) -> bool {
         self.0.iter().any(|expr| expr.eval(data))
     }
 }
 
-impl<T> From<Expr<T>> for Dnf<T> where T: Eval + Eq + Hash {
-    fn from(expr: Expr<T>) -> Self {
+impl<V> From<Expr<V>> for Dnf<V> where V: Eval + Eq + Hash {
+    fn from(expr: Expr<V>) -> Self {
         use Expr::*;
         let mut clauses = HashSet::new();
         let mut queue = Vec::with_capacity(2);
@@ -331,29 +538,28 @@ impl<T> From<Expr<T>> for Dnf<T> where T: Eval + Eq + Hash {
     }
 }
 
-
-impl<T> PartialEq for Dnf<T> where T: Eval + Eq + Hash {
+impl<V> PartialEq for Dnf<V> where V: Eval + Eq + Hash {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
 }
 
-impl<I, T> From<I> for Dnf<T> where
-    I: IntoIterator<Item=Expr<T>>,
-    T: Eval + Eq + Hash
+impl<I, V> From<I> for Dnf<V> where
+    I: IntoIterator<Item=Expr<V>>,
+    V: Eval + Eq + Hash
 {
     fn from(iter: I) -> Self {
         Dnf(iter.into_iter().collect())
     }
 }
 
-impl<T> From<Dnf<T>> for Vec<Expr<T>> where T: Eval + Eq + Hash {
-    fn from(dnf: Dnf<T>) -> Vec<Expr<T>> {
+impl<V> From<Dnf<V>> for Vec<Expr<V>> where V: Eval + Eq + Hash {
+    fn from(dnf: Dnf<V>) -> Vec<Expr<V>> {
         dnf.0.into_iter().collect()
     }
 }
 
-impl<T> Default for Dnf<T> where T: Eval + Eq + Hash {
+impl<V> Default for Dnf<V> where V: Eval + Eq + Hash {
     fn default() -> Self {
         Dnf(HashSet::new())
     }
