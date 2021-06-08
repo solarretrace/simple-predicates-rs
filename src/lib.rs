@@ -99,7 +99,7 @@
 //! # Conjunctive and Disjunctive Normal Forms
 //! 
 //! For more complex expressions, the nesting of `And` and `Or` expressions can
-//! ge very tedious, so the [`Cnf`] and [`Dnf`] types are provided to simplify
+//! get very tedious, so the [`Cnf`] and [`Dnf`] types are provided to simplify
 //! their handling.
 //! 
 //! The `Cnf` type represents the [Conjunctive Normal Form]

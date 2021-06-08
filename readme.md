@@ -66,7 +66,7 @@ assert!(expr.eval(&items));
 
 # Cnf / Dnf
 
-For more complex expressions, the nesting of `And` and `Or` expressions can ge very tedious, so the `Cnf` and `Dnf` types are provided to simplify their handling.
+For more complex expressions, the nesting of `And` and `Or` expressions can get very tedious, so the `Cnf` and `Dnf` types are provided to simplify their handling.
 
 The `Cnf` type represents the [Conjunctive Normal Form](https://en.wikipedia.org/wiki/Conjunctive_normal_form) of a boolean expression; a set of expressions which are `And`ed together. The `Dnf` type represents the [Disjunctive Normal Form](https://en.wikipedia.org/wiki/Disjunctive_normal_form) of a boolean expression; a set of expressions which are `Or`ed together.
 
