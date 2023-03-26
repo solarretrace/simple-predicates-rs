@@ -16,9 +16,9 @@ use crate::Expr;
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
-pub struct CnfVec<V>(Vec<Expr<V>>) where V: Eval + Eq;
+pub struct CnfVec<V>(Vec<Expr<V>>) where V: Eval + PartialEq;
 
-impl<V> CnfVec<V> where V: Eval + Eq {
+impl<V> CnfVec<V> where V: Eval + PartialEq {
     /// Returns the conjunctive clauses as elements of a `Vec`.
     pub fn into_vec(self) -> Vec<Expr<V>> {
         self.0.into_iter().collect()
@@ -30,7 +30,7 @@ impl<V> CnfVec<V> where V: Eval + Eq {
     }
 }
 
-impl<V> Eval for CnfVec<V> where V: Eval + Eq {
+impl<V> Eval for CnfVec<V> where V: Eval + PartialEq {
     type Context = V::Context;
 
     fn eval(&self, data: &Self::Context) -> bool {
@@ -38,7 +38,7 @@ impl<V> Eval for CnfVec<V> where V: Eval + Eq {
     }
 }
 
-impl<V> From<Expr<V>> for CnfVec<V> where V: Eval + Eq {
+impl<V> From<Expr<V>> for CnfVec<V> where V: Eval + PartialEq {
     fn from(expr: Expr<V>) -> Self {
         use Expr::*;
         let mut clauses = Vec::new();
@@ -60,7 +60,7 @@ impl<V> From<Expr<V>> for CnfVec<V> where V: Eval + Eq {
     }
 }
 
-impl<V> PartialEq for CnfVec<V> where V: Eval + Eq {
+impl<V> PartialEq for CnfVec<V> where V: Eval + PartialEq {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
@@ -68,20 +68,20 @@ impl<V> PartialEq for CnfVec<V> where V: Eval + Eq {
 
 impl<I, V> From<I> for CnfVec<V> where
     I: IntoIterator<Item=Expr<V>>,
-    V: Eval + Eq
+    V: Eval + PartialEq
 {
     fn from(iter: I) -> Self {
         CnfVec(iter.into_iter().collect())
     }
 }
 
-impl<V> From<CnfVec<V>> for Vec<Expr<V>> where V: Eval + Eq {
+impl<V> From<CnfVec<V>> for Vec<Expr<V>> where V: Eval + PartialEq {
     fn from(cnf: CnfVec<V>) -> Vec<Expr<V>> {
         cnf.0.into_iter().collect()
     } 
 }
 
-impl<V> Default for CnfVec<V> where V: Eval + Eq {
+impl<V> Default for CnfVec<V> where V: Eval + PartialEq {
     fn default() -> Self {
         CnfVec(Vec::new())
     }
@@ -97,9 +97,9 @@ impl<V> Default for CnfVec<V> where V: Eval + Eq {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
-pub struct DnfVec<V>(Vec<Expr<V>>) where V: Eval + Eq;
+pub struct DnfVec<V>(Vec<Expr<V>>) where V: Eval + PartialEq;
 
-impl<V> DnfVec<V> where V: Eval + Eq{
+impl<V> DnfVec<V> where V: Eval + PartialEq{
     /// Returns the disjunctive clauses as elements of a `Vec`.
     pub fn into_vec(self) -> Vec<Expr<V>> {
         self.0.into_iter().collect()
@@ -111,7 +111,7 @@ impl<V> DnfVec<V> where V: Eval + Eq{
     }
 }
 
-impl<V> Eval for DnfVec<V> where V: Eval + Eq {
+impl<V> Eval for DnfVec<V> where V: Eval + PartialEq {
     type Context = V::Context;
 
     fn eval(&self, data: &Self::Context) -> bool {
@@ -119,7 +119,7 @@ impl<V> Eval for DnfVec<V> where V: Eval + Eq {
     }
 }
 
-impl<V> From<Expr<V>> for DnfVec<V> where V: Eval + Eq {
+impl<V> From<Expr<V>> for DnfVec<V> where V: Eval + PartialEq {
     fn from(expr: Expr<V>) -> Self {
         use Expr::*;
         let mut clauses = Vec::new();
@@ -141,7 +141,7 @@ impl<V> From<Expr<V>> for DnfVec<V> where V: Eval + Eq {
     }
 }
 
-impl<V> PartialEq for DnfVec<V> where V: Eval + Eq {
+impl<V> PartialEq for DnfVec<V> where V: Eval + PartialEq {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
@@ -149,20 +149,20 @@ impl<V> PartialEq for DnfVec<V> where V: Eval + Eq {
 
 impl<I, V> From<I> for DnfVec<V> where
     I: IntoIterator<Item=Expr<V>>,
-    V: Eval + Eq
+    V: Eval + PartialEq
 {
     fn from(iter: I) -> Self {
         DnfVec(iter.into_iter().collect())
     }
 }
 
-impl<V> From<DnfVec<V>> for Vec<Expr<V>> where V: Eval + Eq {
+impl<V> From<DnfVec<V>> for Vec<Expr<V>> where V: Eval + PartialEq {
     fn from(dnf: DnfVec<V>) -> Vec<Expr<V>> {
         dnf.0.into_iter().collect()
     }
 }
 
-impl<V> Default for DnfVec<V> where V: Eval + Eq {
+impl<V> Default for DnfVec<V> where V: Eval + PartialEq {
     fn default() -> Self {
         DnfVec(Vec::new())
     }
