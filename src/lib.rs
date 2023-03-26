@@ -275,6 +275,14 @@ pub trait Eval: Clone + PartialEq  {
 #[derive(Debug, Clone, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Expr<V> {
+    // NOTE: There is a consideration to add an `Empty` variant. This would make
+    // expr simplification more complex, as we would need to handle Or(Empty, X)
+    // and And(Empty, X)... and how to treat the Or case is not obvious.
+    // One must then be careful constructing Exprs to ensure Empty is not
+    // introduced or potentially surprising results would occur. Thus it is
+    // prefered to use Option<Expr<T>> instead, which ensures the empty expr is
+    // always handled at the root.
+
     /// A boolean variable.
     Var(V),
     /// A negated expression.
@@ -361,7 +369,7 @@ impl<V> Expr<V> where V: Eval {
 impl<V> Expr<V> where V: Eval {
     /// Returns true if the expressions have the same representation, up to
     /// equality of the boolean variables. I.e., all of the boolean operators
-    /// are are the same and applied to equivalent variables.
+    /// are the same and applied to equivalent variables.
     pub fn eq_repr(&self, other: &Self) -> bool {
         use Expr::*;
         match (self, other) {
