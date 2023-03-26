@@ -9,6 +9,10 @@
 
 use crate::*;
 
+// External library imports
+#[cfg(feature = "serde")] use serde::Deserialize;
+
+
 
 impl Eval for u32 {
     type Context = Vec<u32>;
@@ -74,7 +78,7 @@ fn simple_and() {
 
 
 #[test]
-fn three_level_cnf() {
+fn three_level_cnf_hash() {
     use Expr::*;
 
     let expr = And(
@@ -93,8 +97,56 @@ fn three_level_cnf() {
                 Box::new(Var(7)),
                 Box::new(Var(8)))))));
 
-    let res = Cnf::from(expr);
-    let cnf = Cnf::from(vec![
+    let res = CnfHashSet::from(expr);
+    let cnf = CnfHashSet::from(vec![
+        Or(
+            Box::new(Var(7)),
+            Box::new(Var(8))),
+        Or(
+            Box::new(Var(5)),
+            Box::new(Var(6))),
+        Or(
+            Box::new(Var(4)),
+            Box::new(Var(2))),
+        Or(
+            Box::new(Var(4)),
+            Box::new(Var(1))),
+        Or(
+            Box::new(Var(3)),
+            Box::new(Var(2))),
+        Or(
+            Box::new(Var(3)),
+            Box::new(Var(1))),
+    ]);
+
+    // println!("{:?}", res);
+    // println!("{:?}", cnf);
+
+    assert_eq!(res, cnf);
+}
+
+#[test]
+fn three_level_cnf_vec() {
+    use Expr::*;
+
+    let expr = And(
+        Box::new(Or(
+            Box::new(And(
+                Box::new(Var(1)),
+                Box::new(Var(2)))),
+            Box::new(And(
+                Box::new(Var(3)),
+                Box::new(Var(4)))))),
+        Box::new(And(
+            Box::new(Or(
+                Box::new(Var(5)),
+                Box::new(Var(6)))),
+            Box::new(Or(
+                Box::new(Var(7)),
+                Box::new(Var(8)))))));
+
+    let res = CnfVec::from(expr);
+    let cnf = CnfVec::from(vec![
         Or(
             Box::new(Var(7)),
             Box::new(Var(8))),
@@ -124,7 +176,7 @@ fn three_level_cnf() {
 
 
 #[test]
-fn three_level_dnf() {
+fn three_level_dnf_hash() {
     use Expr::*;
 
     let expr = And(
@@ -143,8 +195,60 @@ fn three_level_dnf() {
                 Box::new(Var(7)),
                 Box::new(Var(8)))))));
 
-    let res = Dnf::from(expr);
-    let dnf = Dnf::from(vec![
+    let res = DnfHashSet::from(expr);
+    let dnf = DnfHashSet::from(vec![
+        And(
+            Box::new(And(
+                Box::new(Or(
+                    Box::new(Var(5)),
+                    Box::new(Var(6)))),
+                Box::new(Or(
+                    Box::new(Var(7)),
+                    Box::new(Var(8)))))), 
+            Box::new(And(
+                Box::new(Var(3)),
+                Box::new(Var(4))))),
+        And(
+            Box::new(And(
+                Box::new(Or(
+                    Box::new(Var(5)),
+                    Box::new(Var(6)))),
+                Box::new(Or(
+                    Box::new(Var(7)),
+                    Box::new(Var(8)))))),
+            Box::new(And(
+                Box::new(Var(1)),
+                Box::new(Var(2))))),
+    ]);
+
+    // println!("{:?}", res);
+    // println!("{:?}", dnf);
+
+    assert_eq!(res, dnf);
+}
+
+#[test]
+fn three_level_dnf_vec() {
+    use Expr::*;
+
+    let expr = And(
+        Box::new(Or(
+            Box::new(And(
+                Box::new(Var(1)),
+                Box::new(Var(2)))),
+            Box::new(And(
+                Box::new(Var(3)),
+                Box::new(Var(4)))))),
+        Box::new(And(
+            Box::new(Or(
+                Box::new(Var(5)),
+                Box::new(Var(6)))),
+            Box::new(Or(
+                Box::new(Var(7)),
+                Box::new(Var(8)))))));
+
+    let res = DnfVec::from(expr);
+    let dnf = DnfVec::from(vec![
         And(
             Box::new(And(
                 Box::new(Or(

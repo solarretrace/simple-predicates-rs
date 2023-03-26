@@ -12,7 +12,7 @@
 //! the [`Eval`] trait (which requires [`Clone`] and [`PartialEq`].) Vhe
 //! [`Eval`] trait also provides an associated [`Context`] type which can be
 //! used to provide contextual data needed to resolve the variables. Vhe
-//! [`Expr`], [`Cnf`], and [`Dnf`] types can be used to construct evaluable
+//! [`Expr`], [`CnfHashSet`], and [`DnfHashSet`] types can be used to construct evaluable
 //! expressions.
 //! 
 //! 
@@ -99,22 +99,22 @@
 //! # Conjunctive and Disjunctive Normal Forms
 //! 
 //! For more complex expressions, the nesting of `And` and `Or` expressions can
-//! get very tedious, so the [`Cnf`] and [`Dnf`] types are provided to simplify
+//! get very tedious, so the [`CnfHashSet`] and [`DnfHashSet`] types are provided to simplify
 //! their handling.
 //! 
-//! The `Cnf` type represents the [Conjunctive Normal Form]
+//! The `CnfHashSet` type represents the [Conjunctive Normal Form]
 //! of a boolean expression; a set of expressions which are `And`ed together.
-//! The `Dnf` type represents the [Disjunctive Normal Form] of a boolean
+//! The `DnfHashSet` type represents the [Disjunctive Normal Form] of a boolean
 //! expression; a set of expressions which are `Or`ed together.
 //! 
-//! The `Cnf` and `Dnf` types can only be used if the variable type implements
+//! The `CnfHashSet` and `DnfHashSet` types can only be used if the variable type implements
 //! [`Eq`] and [`Hash`]. They have identical APIs, so the examples below are
 //! representative of either.
 //! 
 //! 
 //! ## Examples
 //! 
-//! A [`Cnf`] can be constructed from an [`Expr`], using the [`From`] trait:
+//! A [`CnfHashSet`] can be constructed from an [`Expr`], using the [`From`] trait:
 //! 
 //! ```rust
 //! # use simple_predicates::Eval;
@@ -132,13 +132,13 @@
 //! # use std::error::Error;
 //! # fn main() -> Result<(), Box<dyn Error>> {
 //! # //-------------------------------------------------------------------
-//! use simple_predicates::Cnf;
+//! use simple_predicates::CnfHashSet;
 //! use simple_predicates::Eval;
 //! use simple_predicates::Expr::*;
 //! 
 //! let items: Vec<u32> = vec![1, 2, 4, 7, 9, 10];
 //! 
-//! let cnf = Cnf::from(
+//! let cnf = CnfHashSet::from(
 //!     And(
 //!         Box::new(Var(Contains(4))),
 //!         Box::new(Not(Box::new(Var(Contains(5)))))));
@@ -150,7 +150,7 @@
 //! ```
 //! 
 //! 
-//! A [`Cnf`] can also be constructed from anything that emits [`Expr`]s with
+//! A [`CnfHashSet`] can also be constructed from anything that emits [`Expr`]s with
 //! the [`IntoIterator`] trait:
 //! 
 //! ```rust
@@ -169,13 +169,13 @@
 //! # use std::error::Error;
 //! # fn main() -> Result<(), Box<dyn Error>> {
 //! # //-------------------------------------------------------------------
-//! use simple_predicates::Cnf;
+//! use simple_predicates::CnfHashSet;
 //! use simple_predicates::Eval;
 //! use simple_predicates::Expr::*;
 //! 
 //! let items: Vec<u32> = vec![1, 2, 4, 7, 9, 10];
 //! 
-//! let cnf = Cnf::from(vec![
+//! let cnf = CnfHashSet::from(vec![
 //!     Var(Contains(4)),
 //!     Not(Box::new(Var(Contains(5)))),
 //! ]);
@@ -200,8 +200,8 @@
 //! [`Eval`]: crate::Eval
 //! [`Context`]: crate::Eval::Context
 //! [`Expr`]: crate::Expr
-//! [`Cnf`]: crate::Cnf
-//! [`Dnf`]: crate::Dnf
+//! [`CnfHashSet`]: crate::CnfHashSet
+//! [`DnfHashSet`]: crate::DnfHashSet
 //! [`Eq`]: std::cmp::Eq
 //! [`Hash`]: std::hash::Hash
 //! [`From`]: std::convert::From
@@ -217,7 +217,6 @@
 #![warn(improper_ctypes)]
 #![warn(missing_copy_implementations)]
 #![warn(missing_debug_implementations)]
-#![warn(missing_doc_code_examples)]
 #![warn(missing_docs)]
 #![warn(no_mangle_generic_items)]
 #![warn(non_shorthand_field_patterns)]
@@ -239,341 +238,15 @@
 #![warn(variant_size_differences)]
 #![warn(while_true)]
 
+
 // Internal modules
+mod expr;
+mod hash;
+mod vec;
 #[cfg(test)]
 mod tests;
 
-// External library imports
-#[cfg(feature = "serde")] use serde::Serialize;
-#[cfg(feature = "serde")] use serde::Deserialize;
 
-// Standard library imports
-use std::collections::HashSet;
-use std::hash::Hash;
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Eval
-////////////////////////////////////////////////////////////////////////////////
-/// Provides functions for performing boolean expression evaluation in the
-/// context of some provided `Context`.
-pub trait Eval: Clone + PartialEq  {
-    /// The contextual data required to evaluate the expression.
-    type Context;
-
-    /// Evaluates the expression, returning its truth value.
-    fn eval(&self, data: &Self::Context) -> bool;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Expr
-////////////////////////////////////////////////////////////////////////////////
-/// A boolean expression consisting of boolean operators and variables.
-#[derive(Debug, Clone, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum Expr<V> {
-    // NOTE: There is a consideration to add an `Empty` variant. This would make
-    // expr simplification more complex, as we would need to handle Or(Empty, X)
-    // and And(Empty, X)... and how to treat the Or case is not obvious.
-    // One must then be careful constructing Exprs to ensure Empty is not
-    // introduced or potentially surprising results would occur. Thus it is
-    // prefered to use Option<Expr<T>> instead, which ensures the empty expr is
-    // always handled at the root.
-
-    /// A boolean variable.
-    Var(V),
-    /// A negated expression.
-    Not(Box<Expr<V>>),
-    /// A disjunction of expressions.
-    Or(Box<Expr<V>>, Box<Expr<V>>),
-    /// A conjunction of expressions.
-    And(Box<Expr<V>>, Box<Expr<V>>),
-}
-
-impl<V> Expr<V> where V: Eval {
-    /// Simplifies the expr by removing double-negations and equal subexprs.
-    fn simplify(self) -> Self {
-        use Expr::*;
-        
-        match self {
-            Not(p) => match *p {
-                Not(q) => q.simplify(),
-                q      => Not(Box::new(q.simplify())),
-            }
-            And(a, b) => {
-                let a = a.simplify();
-                let b = b.simplify();
-                if a == b { a } else { And(Box::new(a), Box::new(b)) }
-            },
-            Or(a, b) => {
-                let a = a.simplify();
-                let b = b.simplify();
-                if a == b { a } else { Or(Box::new(a), Box::new(b)) }
-            },
-            _ => self,
-        }
-    }
-
-    // Pushes a `Not` expr below an `And` or `Or` expr, or removes it if it is
-    // above another `Not` expr.
-    fn pushdown_not(self) -> Self {
-        use Expr::*;
-        if let Not(expr) = self {
-            match *expr {
-                Var(p) => Not(Box::new(Var(p))),
-                Not(p) => p.pushdown_not(),
-                Or(a, b) => And(Box::new(Not(a)), Box::new(Not(b))),
-                And(a, b) => Or(Box::new(Not(a)), Box::new(Not(b))),
-            }
-        } else {
-            self
-        }
-    }
-
-    /// Distributes `And` over `Or`.
-    fn distribute_and(self) -> Self {
-        use Expr::*;
-        if let And(a, b) = self {
-            match (*a, *b) {
-                (p, Or(q, r)) |
-                (Or(q, r), p) => Or(
-                    Box::new(And(Box::new(p.clone()), q)),
-                    Box::new(And(Box::new(p), r))),
-                (a, b) => And(Box::new(a), Box::new(b))
-            }
-        } else {
-            self
-        }
-    }
-
-    /// Distributes `Or` over `And`.
-    fn distribute_or(self) -> Self {
-        use Expr::*;
-        if let Or(a, b) = self {
-            match (*a, *b) {
-                (p, And(q, r)) |
-                (And(q, r), p) => And(
-                    Box::new(Or(Box::new(p.clone()), q)),
-                    Box::new(Or(Box::new(p), r))),
-                (a, b) => Or(Box::new(a), Box::new(b))
-            }
-        } else {
-            self
-        }
-    }
-}
-
-impl<V> Expr<V> where V: Eval {
-    /// Returns true if the expressions have the same representation, up to
-    /// equality of the boolean variables. I.e., all of the boolean operators
-    /// are the same and applied to equivalent variables.
-    pub fn eq_repr(&self, other: &Self) -> bool {
-        use Expr::*;
-        match (self, other) {
-            (Var(a), Var(b)) => a == b,
-            (Not(a), Not(b)) => a.eq_repr(b),
-            (Or(a1, b1), Or(a2, b2)) => {
-                a1.eq_repr(b1) &&
-                a2.eq_repr(b2)
-            },
-            (And(a1, b1), And(a2, b2)) => {
-                a1.eq_repr(b1) &&
-                a2.eq_repr(b2)
-            },
-            _ => false,
-        }
-    }
-}
-
-impl<V> Eval for Expr<V> where V: Eval {
-    type Context = V::Context;
-
-    fn eval(&self, data: &Self::Context) -> bool {
-        use Expr::*;
-        match self {
-            Var(p) => p.eval(data),
-            Not(p) => !p.eval(data),
-            Or(a, b) => a.eval(data) || b.eval(data),
-            And(a, b) => a.eval(data) && b.eval(data),
-        }
-    }
-}
-
-impl<V> PartialEq for Expr<V> where V: PartialEq {
-    fn eq(&self, other: &Self) -> bool {
-        use Expr::*;
-
-        match (self, other) {
-            (Var(p1),    Var(p2))    => p1 == p2,
-            (Not(p1),     Not(p2))     => p1 == p2,
-            (Or(a1, b1),  Or(a2, b2))  => 
-                (a1 == a2 && b1 == b2) || (a1 == b2 && b1 == a2),
-            (And(a1, b1), And(a2, b2)) => 
-                (a1 == a2 && b1 == b2) || (a1 == b2 && b1 == a2),
-            _ => false,
-        }
-    }
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Cnf
-////////////////////////////////////////////////////////////////////////////////
-/// A boolean expression in [Conjunctive Normal Form].
-///
-/// [Conjunctive Normal Form]: https://en.wikipedia.org/wiki/Conjunctive_normal_form
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde", serde(transparent))]
-pub struct Cnf<V>(HashSet<Expr<V>>) where V: Eval + Eq + Hash;
-
-impl<V> Cnf<V> where V: Eval + Eq + Hash {
-    /// Returns the conjunctive clauses as elements of a `Vec`.
-    pub fn into_vec(self) -> Vec<Expr<V>> {
-        self.0.into_iter().collect()
-    }
-
-    /// Returns true if the boolean expression contains no terms.
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-}
-
-impl<V> Eval for Cnf<V> where V: Eval + Eq + Hash {
-    type Context = V::Context;
-
-    fn eval(&self, data: &Self::Context) -> bool {
-        self.0.iter().all(|expr| expr.eval(data))
-    }
-}
-
-impl<V> From<Expr<V>> for Cnf<V> where V: Eval + Eq + Hash {
-    fn from(expr: Expr<V>) -> Self {
-        use Expr::*;
-        let mut clauses = HashSet::new();
-        let mut queue = Vec::with_capacity(2);
-        queue.push(expr.simplify());
-
-        while let Some(expr) = queue.pop() {
-            match expr.pushdown_not().distribute_or() {
-                And(a, b) => {
-                    queue.push(*a);
-                    queue.push(*b);
-                },
-                other => {
-                    let _ = clauses.insert(other);
-                }
-            }
-        }
-        Cnf(clauses)
-    }
-}
-
-impl<V> PartialEq for Cnf<V> where V: Eval + Eq + Hash {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl<I, V> From<I> for Cnf<V> where
-    I: IntoIterator<Item=Expr<V>>,
-    V: Eval + Eq + Hash
-{
-    fn from(iter: I) -> Self {
-        Cnf(iter.into_iter().collect())
-    }
-}
-
-impl<V> From<Cnf<V>> for Vec<Expr<V>> where V: Eval + Eq + Hash {
-    fn from(cnf: Cnf<V>) -> Vec<Expr<V>> {
-        cnf.0.into_iter().collect()
-    } 
-}
-
-impl<V> Default for Cnf<V> where V: Eval + Eq + Hash {
-    fn default() -> Self {
-        Cnf(HashSet::new())
-    }
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Dnf
-////////////////////////////////////////////////////////////////////////////////
-/// A boolean expression in [Disjunctive Normal Form].
-///
-/// [Disjunctive Normal Form]: https://en.wikipedia.org/wiki/Disjunctive_normal_form
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde", serde(transparent))]
-pub struct Dnf<V>(HashSet<Expr<V>>) where V: Eval + Eq + Hash;
-
-impl<V> Dnf<V> where V: Eval + Eq + Hash{
-    /// Returns the disjunctive clauses as elements of a `Vec`.
-    pub fn into_vec(self) -> Vec<Expr<V>> {
-        self.0.into_iter().collect()
-    }
-
-    /// Returns true if the boolean expression contains no terms.
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-}
-
-impl<V> Eval for Dnf<V> where V: Eval + Eq + Hash {
-    type Context = V::Context;
-
-    fn eval(&self, data: &Self::Context) -> bool {
-        self.0.iter().any(|expr| expr.eval(data))
-    }
-}
-
-impl<V> From<Expr<V>> for Dnf<V> where V: Eval + Eq + Hash {
-    fn from(expr: Expr<V>) -> Self {
-        use Expr::*;
-        let mut clauses = HashSet::new();
-        let mut queue = Vec::with_capacity(2);
-        queue.push(expr.simplify());
-
-        while let Some(expr) = queue.pop() {
-            match expr.pushdown_not().distribute_and() {
-                Or(a, b) => {
-                    queue.push(*a);
-                    queue.push(*b);
-                },
-                other => {
-                    let _ = clauses.insert(other);
-                }
-            }
-        }
-        Dnf(clauses)
-    }
-}
-
-impl<V> PartialEq for Dnf<V> where V: Eval + Eq + Hash {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl<I, V> From<I> for Dnf<V> where
-    I: IntoIterator<Item=Expr<V>>,
-    V: Eval + Eq + Hash
-{
-    fn from(iter: I) -> Self {
-        Dnf(iter.into_iter().collect())
-    }
-}
-
-impl<V> From<Dnf<V>> for Vec<Expr<V>> where V: Eval + Eq + Hash {
-    fn from(dnf: Dnf<V>) -> Vec<Expr<V>> {
-        dnf.0.into_iter().collect()
-    }
-}
-
-impl<V> Default for Dnf<V> where V: Eval + Eq + Hash {
-    fn default() -> Self {
-        Dnf(HashSet::new())
-    }
-}
+pub use crate::expr::*;
+pub use crate::hash::*;
+pub use crate::vec::*;
