@@ -212,7 +212,6 @@
 #![warn(anonymous_parameters)]
 #![warn(bad_style)]
 #![warn(bare_trait_objects)]
-#![warn(const_err)]
 #![warn(dead_code)]
 #![warn(elided_lifetimes_in_paths)]
 #![warn(improper_ctypes)]
@@ -265,7 +264,6 @@ pub trait Eval: Clone + PartialEq  {
     /// Evaluates the expression, returning its truth value.
     fn eval(&self, data: &Self::Context) -> bool;
 }
-
 
 
 ////////////////////////////////////////////////////////////////////////////////
