@@ -22,7 +22,7 @@
 //! 
 //! ```toml
 //! [dependencies]
-//! simple_predicates = "0.2"
+//! simple_predicates = "0.4"
 //! ```
 //!
 //! ## Features
@@ -99,17 +99,19 @@
 //! # Conjunctive and Disjunctive Normal Forms
 //! 
 //! For more complex expressions, the nesting of `And` and `Or` expressions can
-//! get very tedious, so the [`CnfHashSet`] and [`DnfHashSet`] types are provided to simplify
-//! their handling.
+//! get very tedious, so the [`CnfHashSet`] and [`DnfHashSet`] types are
+//! provided to simplify their handling.
 //! 
 //! The `CnfHashSet` type represents the [Conjunctive Normal Form]
 //! of a boolean expression; a set of expressions which are `And`ed together.
 //! The `DnfHashSet` type represents the [Disjunctive Normal Form] of a boolean
 //! expression; a set of expressions which are `Or`ed together.
 //! 
-//! The `CnfHashSet` and `DnfHashSet` types can only be used if the variable type implements
-//! [`Eq`] and [`Hash`]. They have identical APIs, so the examples below are
-//! representative of either.
+//! The `CnfHashSet` and `DnfHashSet` types can only be used if the variable
+//! type implements [`Eq`] and [`Hash`]. They have identical APIs, so the
+//! examples below are representative of either. There are version backed by
+//! `Vec` ([`CnfVec`] and [`DnfVec`]) which have more relaxed requirements, but
+//! are not as efficient in some instances.
 //! 
 //! 
 //! ## Examples
@@ -202,6 +204,8 @@
 //! [`Expr`]: crate::Expr
 //! [`CnfHashSet`]: crate::CnfHashSet
 //! [`DnfHashSet`]: crate::DnfHashSet
+//! [`CnfVec`]: crate::CnfVec
+//! [`DnfVec`]: crate::DnfVec
 //! [`Eq`]: std::cmp::Eq
 //! [`Hash`]: std::hash::Hash
 //! [`From`]: std::convert::From

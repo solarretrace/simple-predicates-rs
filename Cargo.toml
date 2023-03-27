@@ -1,15 +1,15 @@
 [package]
 name = "simple_predicates"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Skylor R Schermer <skyschermer@gmail.com>"]
 edition = "2018"
 resolver = "2"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/skysch/simple_predicates-rs"
+repository = "https://github.com/solarretrace/simple_predicates-rs"
 description = "A simple local configuration management utility"
 readme = "readme.md"
 keywords = []
-homepage = "https://github.com/skysch/simple_predicates-rs"
+homepage = "https://github.com/solarretrace/simple_predicates-rs"
 exclude = ["*.sublime-project", "*.sublime-workspace"]
 
 [lib]
@@ -21,8 +21,6 @@ default = []
 # Required dependencies
 [dependencies]
 serde = { version = "1.0", features = ["derive"], optional = true }
-
-# Optional dependencies
 
 # Dependencies used for tests, examples, and benches.
 [dev-dependencies]
