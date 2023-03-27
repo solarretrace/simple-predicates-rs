@@ -43,7 +43,61 @@ pub enum Expr<V> {
     And(Box<Expr<V>>, Box<Expr<V>>),
 }
 
-impl<V> Expr<V> where V: Eval {
+impl<V> Expr<V> {
+    /// Applies the given function to every value in the `Expr`.
+    pub fn map<F, X>(self, f: &F) -> Expr<X>
+        where F: Fn(V) -> X
+    {
+        // NOTE: Fn or FnMut? FnMut results depend on recursion order, which we
+        // don't want to commit to.
+        use Expr::*;
+
+        match self {
+            Var(v)    => Var((f)(v)),
+            Not(p)    => Not(Box::new(p.map(f))),
+            And(a, b) => And(Box::new(a.map(f)), Box::new(b.map(f))),
+            Or(a, b)  => Or(Box::new(a.map(f)), Box::new(b.map(f))),
+        }
+    }
+
+    // Pushes a `Not` expr below an `And` or `Or` expr, or removes it if it is
+    // above another `Not` expr.
+    pub (in crate) fn pushdown_not(self) -> Self {
+        use Expr::*;
+        if let Not(expr) = self {
+            match *expr {
+                Var(p) => Not(Box::new(Var(p))),
+                Not(p) => p.pushdown_not(),
+                Or(a, b) => And(Box::new(Not(a)), Box::new(Not(b))),
+                And(a, b) => Or(Box::new(Not(a)), Box::new(Not(b))),
+            }
+        } else {
+            self
+        }
+    }
+}
+
+impl<V> Expr<V> where V: PartialEq {
+    /// Returns true if the expressions have the same representation, up to
+    /// equality of the boolean variables. I.e., all of the boolean operators
+    /// are the same and applied to equivalent variables.
+    pub fn eq_repr(&self, other: &Self) -> bool {
+        use Expr::*;
+        match (self, other) {
+            (Var(a), Var(b)) => a == b,
+            (Not(a), Not(b)) => a.eq_repr(b),
+            (Or(a1, b1), Or(a2, b2)) => {
+                a1.eq_repr(b1) &&
+                a2.eq_repr(b2)
+            },
+            (And(a1, b1), And(a2, b2)) => {
+                a1.eq_repr(b1) &&
+                a2.eq_repr(b2)
+            },
+            _ => false,
+        }
+    }
+
     /// Simplifies the expr by removing double-negations and equal subexprs.
     pub (in crate) fn simplify(self) -> Self {
         use Expr::*;
@@ -66,23 +120,9 @@ impl<V> Expr<V> where V: Eval {
             _ => self,
         }
     }
+}
 
-    // Pushes a `Not` expr below an `And` or `Or` expr, or removes it if it is
-    // above another `Not` expr.
-    pub (in crate) fn pushdown_not(self) -> Self {
-        use Expr::*;
-        if let Not(expr) = self {
-            match *expr {
-                Var(p) => Not(Box::new(Var(p))),
-                Not(p) => p.pushdown_not(),
-                Or(a, b) => And(Box::new(Not(a)), Box::new(Not(b))),
-                And(a, b) => Or(Box::new(Not(a)), Box::new(Not(b))),
-            }
-        } else {
-            self
-        }
-    }
-
+impl<V> Expr<V> where V: Clone {
     /// Distributes `And` over `Or`.
     pub (in crate) fn distribute_and(self) -> Self {
         use Expr::*;
@@ -112,28 +152,6 @@ impl<V> Expr<V> where V: Eval {
             }
         } else {
             self
-        }
-    }
-}
-
-impl<V> Expr<V> where V: Eval {
-    /// Returns true if the expressions have the same representation, up to
-    /// equality of the boolean variables. I.e., all of the boolean operators
-    /// are the same and applied to equivalent variables.
-    pub fn eq_repr(&self, other: &Self) -> bool {
-        use Expr::*;
-        match (self, other) {
-            (Var(a), Var(b)) => a == b,
-            (Not(a), Not(b)) => a.eq_repr(b),
-            (Or(a1, b1), Or(a2, b2)) => {
-                a1.eq_repr(b1) &&
-                a2.eq_repr(b2)
-            },
-            (And(a1, b1), And(a2, b2)) => {
-                a1.eq_repr(b1) &&
-                a2.eq_repr(b2)
-            },
-            _ => false,
         }
     }
 }
