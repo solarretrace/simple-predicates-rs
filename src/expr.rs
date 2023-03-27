@@ -45,7 +45,7 @@ pub enum Expr<V> {
 
 impl<V> Expr<V> {
     /// Applies the given function to every value in the `Expr`.
-    pub fn map<F, X>(self, f: &F) -> Expr<X>
+    pub fn map<F, X>(self, f: F) -> Expr<X>
         where F: Fn(V) -> X
     {
         // NOTE: Fn or FnMut? FnMut results depend on recursion order, which we
@@ -53,10 +53,10 @@ impl<V> Expr<V> {
         use Expr::*;
 
         match self {
-            Var(v)    => Var((f)(v)),
-            Not(p)    => Not(Box::new(p.map(f))),
-            And(a, b) => And(Box::new(a.map(f)), Box::new(b.map(f))),
-            Or(a, b)  => Or(Box::new(a.map(f)), Box::new(b.map(f))),
+            Var(v)    => Var((&f)(v)),
+            Not(p)    => Not(Box::new(p.map(&f))),
+            And(a, b) => And(Box::new(a.map(&f)), Box::new(b.map(&f))),
+            Or(a, b)  => Or(Box::new(a.map(&f)), Box::new(b.map(&f))),
         }
     }
 
