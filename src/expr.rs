@@ -50,13 +50,25 @@ impl<V> Expr<V> {
     {
         // NOTE: Fn or FnMut? FnMut results depend on recursion order, which we
         // don't want to commit to.
-        use Expr::*;
+        self.map_inner(&f)
+    }
 
+    /// Apply the map. This method exists to prevent instantiating infinite
+    /// types if a closure is passed to `map`, or to prevent needing to borrow
+    /// the closure when passing it in.
+    fn map_inner<F, X>(self, f: &F) -> Expr<X>
+        where F: Fn(V) -> X
+    {
+        use Expr::*;
         match self {
-            Var(v)    => Var((&f)(v)),
-            Not(p)    => Not(Box::new(p.map(&f))),
-            And(a, b) => And(Box::new(a.map(&f)), Box::new(b.map(&f))),
-            Or(a, b)  => Or(Box::new(a.map(&f)), Box::new(b.map(&f))),
+            Var(v)    => Var(f(v)),
+            Not(p)    => Not(Box::new(p.map_inner(f))),
+            And(a, b) => And(
+                Box::new(a.map_inner(f)),
+                Box::new(b.map_inner(f))),
+            Or(a, b)  => Or(
+                Box::new(a.map_inner(f)),
+                Box::new(b.map_inner(f))),
         }
     }
 

@@ -78,6 +78,22 @@ fn simple_and() {
 
 
 #[test]
+fn map_and() {
+    use Expr::*;
+    let items: Vec<u32> = vec![1, 2, 4, 5, 7, 9, 10];
+
+    let expr = And(Box::new(Var(3)), Box::new(Var(8))).map(|v| v+1);
+    assert!(expr.eval(&items));
+
+    let expr = And(Box::new(Var(1)), Box::new(Var(5))).map(|v| v+1);
+    assert!(!expr.eval(&items));
+
+    let expr = And(Box::new(Var(10)), Box::new(Var(4))).map(|v| v+1);
+    assert!(!expr.eval(&items));
+}
+
+
+#[test]
 fn three_level_cnf_hash() {
     use Expr::*;
 
