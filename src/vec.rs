@@ -19,9 +19,21 @@ use crate::Expr;
 pub struct CnfVec<V>(Vec<Expr<V>>) where V: Eval + PartialEq;
 
 impl<V> CnfVec<V> where V: Eval + PartialEq {
+    /// Returns a reference to the the conjunctive clauses as elements of a
+    /// `Vec`.
+    pub fn as_ref(&self) -> &Vec<Expr<V>> {
+        &self.0
+    }
+
+    /// Returns a mutable reference to the the conjunctive clauses as elements
+    /// of a `Vec`.
+    pub fn as_mut(&mut self) -> &mut Vec<Expr<V>> {
+        &mut self.0
+    }
+
     /// Returns the conjunctive clauses as elements of a `Vec`.
     pub fn into_vec(self) -> Vec<Expr<V>> {
-        self.0.into_iter().collect()
+        self.0
     }
 
     /// Returns true if the boolean expression contains no terms.
@@ -100,9 +112,21 @@ impl<V> Default for CnfVec<V> where V: Eval + PartialEq {
 pub struct DnfVec<V>(Vec<Expr<V>>) where V: Eval + PartialEq;
 
 impl<V> DnfVec<V> where V: Eval + PartialEq{
+    /// Returns a reference to the the disjunctive clauses as elements of a
+    /// `Vec`.
+    pub fn as_ref(&self) -> &Vec<Expr<V>> {
+        &self.0
+    }
+
+    /// Returns a mutable reference to the the disjunctive clauses as elements
+    /// of a `Vec`.
+    pub fn as_mut(&mut self) -> &mut Vec<Expr<V>> {
+        &mut self.0
+    }
+
     /// Returns the disjunctive clauses as elements of a `Vec`.
     pub fn into_vec(self) -> Vec<Expr<V>> {
-        self.0.into_iter().collect()
+        self.0
     }
 
     /// Returns true if the boolean expression contains no terms.
